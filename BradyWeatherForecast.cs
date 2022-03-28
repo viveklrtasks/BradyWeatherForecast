@@ -30,6 +30,7 @@ namespace BradyWeatherForecast
        
             var requestUrl = $"{weatherApiRootUrl}?key={weatherApiToken}&q={location}&aqi=no";
 
+            //CI TEST
             try
             {
                 using (var httpClient = new HttpClient())

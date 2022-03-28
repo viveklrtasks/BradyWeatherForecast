@@ -30,7 +30,6 @@ jobs:
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build --configuration Release --output ./output
-          working-directory: ./BradyWeatherForecast
           popd
 
       - name: 'Run Azure Functions Action'

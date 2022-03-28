@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Net.Http;
+using BradyWeatherForecast.Model;
+using System.Net;
+using System.Text;
 
 namespace BradyWeatherForecast
 {
@@ -18,7 +21,7 @@ namespace BradyWeatherForecast
         public const string Method = "get";
 
         [FunctionName(OperationName)]
-        public static async Task<IActionResult> Run(
+        public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, Method, Route = FunctionRoute)] HttpRequest request,
             string location,
             ILogger log)
@@ -30,22 +33,48 @@ namespace BradyWeatherForecast
        
             var requestUrl = $"{weatherApiRootUrl}?key={weatherApiToken}&q={location}&aqi=no";
 
-            //CI TEST
             try
             {
                 using (var httpClient = new HttpClient())
                 {
                     var httpResponse = await httpClient.GetAsync(requestUrl);
-                    var result = httpResponse.Content.ReadAsStringAsync();
+                    
+                    var weatherData = await httpResponse.Content.ReadAsStringAsync();
 
-                    return new JsonResult(result);
+                    dynamic deserializedWeatherData = JsonConvert.DeserializeObject(weatherData);
+
+                    var weatherDataToReturn = MapWeatherResult(deserializedWeatherData);
+
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(JsonConvert.SerializeObject(weatherDataToReturn), Encoding.UTF8, "application/json")
+                    };
                 }
             }
             catch (Exception ex)
             {
                 log.LogError(ex.StackTrace);
-                return new JsonResult(new { Error = ex.Message });
+                return new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Unexpected Error!")
+                };
             }
+        }
+
+        private static WeatherApiDto MapWeatherResult(dynamic deserializedResult)
+        {
+           return new WeatherApiDto
+            {
+                Name = deserializedResult.location.name,
+                Country = deserializedResult.location.country,
+                Region = deserializedResult.location.region,
+                Condition = deserializedResult.current.condition.text,
+                Icon = deserializedResult.current.condition.icon,
+                Tempreature = deserializedResult.current.temp_c,
+                Wind = deserializedResult.current.wind_mph,
+                FeelsLike = deserializedResult.current.feelslike_c,
+                Humidity = deserializedResult.current.humidity,
+            };
         }
     }
 }

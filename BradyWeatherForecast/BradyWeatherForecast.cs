@@ -11,6 +11,7 @@ using System.Net.Http;
 using BradyWeatherForecast.Model;
 using System.Net;
 using System.Text;
+using Microsoft.Azure.Services.AppAuthentication;
 
 namespace BradyWeatherForecast
 {
@@ -28,6 +29,11 @@ namespace BradyWeatherForecast
         {
             log.LogInformation($"Calling weather api for location - {location}");
 
+            if(string.IsNullOrEmpty(location))
+            {
+                throw new ArgumentNullException(nameof(location));
+            }
+
             var weatherApiRootUrl = Environment.GetEnvironmentVariable("WeatherApiUrl");
             var weatherApiToken = Environment.GetEnvironmentVariable("WeatherApiToken");
        
@@ -37,6 +43,7 @@ namespace BradyWeatherForecast
             {
                 using (var httpClient = new HttpClient())
                 {
+                   
                     var httpResponse = await httpClient.GetAsync(requestUrl);
                     
                     var weatherData = await httpResponse.Content.ReadAsStringAsync();
